@@ -1,44 +1,61 @@
 #pragma once
 
 #include <vector>
-#include <string>
 #include <stdexcept>
+#include <string>
 
-namespace linalg {
+namespace LinearAlgebra {
     class Vector {
-        public:    
-        std::vector<double> vec;
+        private:
+        std::vector<double> *vector;
 
-        Vector(size_t n) {
-            this->vec = std::vector<double>(n);
+        public:
+        // Constructors
+        Vector(const size_t n, const double defaultValue = 0) {
+            vector = new std::vector<double>(n, defaultValue);
         }
 
-        Vector(std::vector<double> vec) {
-            this->vec = vec;
-        }
+        Vector(const std::vector<double> &vector) {
+            this->vector = new std::vector<double>(vector.size());
 
-        Vector(Vector &copy) {
-            this->vec = copy.vec;
-        }
-
-        double operator   [](size_t i) const {return this->vec[i];}
-        double & operator [](size_t i)       {return this->vec[i];}
-
-        double dot(Vector &other) {
-            if(this->size() != other.size()) {
-                throw std::invalid_argument("Both vectors need to be the same size");
+            for(size_t i = 0; i < vector.size(); ++i) {
+                this->vector->at(i) = vector[i];
             }
+        }
 
-            double sum = 0;
+        Vector(Vector const &other) {
+            size_t n = other.size();
+
+            this->vector = new std::vector<double>(n);
+            for(size_t i = 0; i < n; ++i) {
+                this->vector->at(i) = other[i];
+            }
+        }
+
+
+        // Square Brackets
+        double & operator [](size_t i) {return this->vector->at(i);}
+        double & at(size_t i) {return this->vector->at(i);}
+        double operator[] (size_t i) const {return this->vector->at(i);}
+        double at(size_t i) const {return this->vector->at(i);}
+
+
+        // Vector Addition
+        Vector operator+(const Vector &other) const {
+            if(this->size() != other.size()) throw std::invalid_argument("Both vectors must be of the same dimension");
+            
+            Vector ret(*this);
 
             for(size_t i = 0; i < this->size(); ++i) {
-                sum += (*this)[i] * other[i];
+                ret[i] += other[i];
             }
 
-            return sum;
+            return ret;
         }
 
-        Vector scale(double scalar) {
+
+        // Scalar Multiplication
+        Vector operator*(const double scalar) const {
             Vector ret(*this);
 
             for(size_t i = 0; i < ret.size(); ++i) {
@@ -48,29 +65,43 @@ namespace linalg {
             return ret;
         }
 
-        Vector add(Vector &other) {
-            Vector ret(other);
+        friend Vector operator*(const double scalar, const Vector &vector) {
+            return vector * scalar;
+        }
 
-            for(size_t i = 0; i < ret.size(); ++i) {
-                ret[i] += vec[i];
+
+        // Dot Product
+        double dot(const Vector &other) const {
+            if(other.size() != this->size()) throw std::invalid_argument("Both vectors must be of the same dimension");
+            
+            double dotProduct = 0;
+
+            for(size_t i = 0; i < this->size(); ++i) {
+                dotProduct += this->at(i) * other[i]; 
             }
 
-            return ret;
+            return dotProduct;
         }
 
-        size_t size() {
-            return this->vec.size();
+
+        size_t size() const {
+            return this->vector->size();
         }
 
-        std::string string() {
-            std::string ret = "";
+        std::string string() const {
+            std::string ret = "(";
+            
             for(size_t i = 0; i < this->size(); ++i) {
-                ret += std::to_string((*this)[i]) + " ";
+                ret += std::to_string(this->at(i)) + " ";
             }
 
             ret.pop_back();
 
-            return ret;
+            return ret + ")";
+        }
+
+        ~Vector() {
+            delete vector;
         }
     };
 }

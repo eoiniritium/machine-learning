@@ -23,7 +23,7 @@ namespace LinearAlgebra {
             }
         }
 
-        Vector(Vector const &other) {
+        Vector(const Vector &other) {
             size_t n = other.size();
 
             this->vector = new std::vector<double>(n);
@@ -64,7 +64,6 @@ namespace LinearAlgebra {
 
             return ret;
         }
-
         friend Vector operator*(const double scalar, const Vector &vector) {
             return vector * scalar;
         }
@@ -101,7 +100,7 @@ namespace LinearAlgebra {
         }
 
         ~Vector() {
-            delete vector;
+            delete this->vector;
         }
     };
 }

@@ -1,9 +1,10 @@
 #pragma once
 
-#include<vector>
-#include<cmath>
-#include<string>
-#include<stdexcept>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <stdexcept>
+#include <functional>
 
 
 namespace LinearAlgebra {
@@ -13,7 +14,7 @@ namespace LinearAlgebra {
         size_t noRows, noColumns;
 
         public:
-        Matrix();
+        Matrix() {};
 
         Matrix(const size_t rows, const size_t columns, double defaultValue = 0.0) {
             this->noRows = rows;
@@ -50,16 +51,8 @@ namespace LinearAlgebra {
         double & at(size_t i, size_t j) {return this->matrix[i * noColumns + j];}
         double at(size_t i, size_t j) const {return this->matrix[i * noColumns + j];}
         
-        double & operator[] (size_t i) {
-            if(i > noRows*noColumns) throw std::invalid_argument("Out of range");
-
-            return this->matrix[i];
-        }
-        double operator[] (size_t i) const {
-            if(i >= noRows*noColumns) throw std::invalid_argument("Out of range");
-
-            return this->matrix[i];
-        }
+        double & operator[] (size_t i) { return this->matrix[i]; }
+        double operator[] (size_t i) const { return this->matrix[i]; }
 
 
         size_t rows()    const { return this->noRows;    }
@@ -80,6 +73,7 @@ namespace LinearAlgebra {
 
             return ret;
         }
+        Matrix operator-(const Matrix &other) const { return (*this) + (-1.0) * other; }
 
         // Scalar Multiplication
         Matrix operator*(const double scalar) const {
@@ -126,6 +120,27 @@ namespace LinearAlgebra {
             return ret;
         }
 
+        Matrix transpose() const {
+            Matrix ret(this->noColumns, this->noRows);
+
+            for(size_t row = 0; row < this->noRows; ++row) {
+                for(size_t col = 0; col < this->noColumns; ++col) {
+                    ret.at(col, row) = this->at(row, col);
+                }
+            }
+
+            return ret;
+        }
+
+        Matrix apply(std::function<double(double)> f) const {
+            Matrix ret(*this);
+
+            for(size_t i = 0; i < this->noRows * this->noColumns; ++i) {
+                ret[i] = f(ret[i]);
+            }
+
+            return ret;
+        }
         
         std::string string() const {
             std::string ret = "[";
@@ -142,6 +157,51 @@ namespace LinearAlgebra {
 
             ret.pop_back();
             ret += "]";
+
+            return ret;
+        }
+
+        Matrix extendFromRow(const size_t noRows) const {
+            if(this->noRows != 1) {
+                throw std::invalid_argument("Matrix is not of size 1xN");
+            }
+
+            Matrix ret(noRows, this->noColumns);
+
+            for(size_t row = 0; row < noRows; ++row) {
+                for(size_t col = 0; col < this->noColumns; ++ col) {
+                    ret.at(row, col) = this->at(1, col);
+                }
+            }
+
+            return ret;
+        }
+        Matrix extendFromColumn(const size_t noCols) const {
+            if(this->noColumns != 1) {
+                throw std::invalid_argument("Matrix is not of size 1xN");
+            }
+
+            Matrix ret(this->noRows, noCols);
+
+            for(size_t row = 0; row < ret.rows(); ++row) {
+                for(size_t col = 0; col < ret.columns(); ++col) {
+                    ret.at(row, col) = this->at(row, 1);
+                }
+            }
+
+            return ret;
+        }
+
+        Matrix hadamardProduct(const Matrix &other) const {
+            if(this->rows() != other.rows() || this->columns() != other.columns()) {
+                throw std::invalid_argument("Hadamard Product: Matricies are of different dimensions!");
+            }
+
+            Matrix ret(*this);
+
+            for(size_t i = 0; i < ret.rows() * ret.columns(); ++i) {
+                ret[i] *= other[i];
+            }
 
             return ret;
         }

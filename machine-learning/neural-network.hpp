@@ -52,9 +52,11 @@ namespace MachineLearning {
 
             size_t batchCount = 0;
             for(size_t i = 0; i < trainingData.size(); ++i) {
-                if(i == batchSize) { ++batchSize; }
-                batchSize.pu;
+                if(i == batchSize) { ++batchCount; }
+                ret[batchCount].push_back(trainingData[i]);
             }
+
+            return ret;
         }
 
 

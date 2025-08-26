@@ -50,6 +50,28 @@
         "xhash": "cpp",
         "algorithm": "cpp",
         "random": "cpp",
-        "span": "cpp"
-    }
+        "span": "cpp",
+        "__bit_reference": "cpp",
+        "__hash_table": "cpp",
+        "__locale": "cpp",
+        "__node_handle": "cpp",
+        "__split_buffer": "cpp",
+        "__verbose_abort": "cpp",
+        "array": "cpp",
+        "bitset": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "execution": "cpp",
+        "locale": "cpp",
+        "mutex": "cpp",
+        "optional": "cpp",
+        "print": "cpp",
+        "queue": "cpp",
+        "ratio": "cpp",
+        "stack": "cpp",
+        "string_view": "cpp",
+        "variant": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

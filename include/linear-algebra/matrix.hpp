@@ -50,7 +50,7 @@ namespace LinearAlgebra {
 
         double & at(size_t i, size_t j) {return this->matrix[i * noColumns + j];}
         double at(size_t i, size_t j) const {return this->matrix[i * noColumns + j];}
-        
+
         double & operator[] (size_t i) { return this->matrix[i]; }
         double operator[] (size_t i) const { return this->matrix[i]; }
 
@@ -132,7 +132,7 @@ namespace LinearAlgebra {
             return ret;
         }
 
-        Matrix apply(std::function<double(double)> f) const {
+        Matrix vectorise(std::function<double(double)> f) const {
             Matrix ret(*this);
 
             for(size_t i = 0; i < this->noRows * this->noColumns; ++i) {
@@ -141,13 +141,13 @@ namespace LinearAlgebra {
 
             return ret;
         }
-        
+
         std::string string() const {
             std::string ret = "[";
 
             for(size_t row = 0; row < noRows; ++row) {
                 ret += "[";
-                
+
                 for(size_t col = 0; col < noColumns; ++col) {
                     ret += std::to_string(this->at(row, col)) + " ";
                 }

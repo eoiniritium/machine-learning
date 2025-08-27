@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <functional>
+#include <iostream>
 
 
 namespace LinearAlgebra {
@@ -89,7 +90,17 @@ namespace LinearAlgebra {
 
         // Matrix Multiplication
         Matrix operator*(const Matrix &other) const {
-            if(this->noColumns != other.rows()) { throw std::invalid_argument("Can't multiply, sizes don't match"); }
+            if(this->noColumns != other.rows()) {
+                throw std::invalid_argument(
+                    (
+                        "Matrix multiplication: Cant multiply (%zux%zu)x(%zux%zu)",
+                        this->noRows,
+                        this->noColumns,
+                        other.rows(),
+                        other.columns()
+                    )
+                );
+            }
 
             size_t newRows = this->noRows;
             size_t newCols = other.columns();

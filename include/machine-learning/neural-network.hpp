@@ -12,54 +12,65 @@
 namespace MachineLearning {
     class Layer {
         public:
-        LinearAlgebra::Matrix z, a;
-        LinearAlgebra::Matrix biases;
-        LinearAlgebra::Matrix weightsToNext;
+        LinearAlgebra::Matrix z, a, biases, weights2next;
 
-        size_t dimension;
+        Layer(const size_t dimension, const size_t nextLayerDimension) {
+            this->z      = LinearAlgebra::Matrix(dimension, 1);
+            this->a      = LinearAlgebra::Matrix(dimension, 1);
+            this->biases = LinearAlgebra::Matrix(dimension, 1);
 
-        Layer(const size_t dimension, const size_t nextDimension=0) {
-            this->dimension = dimension;
-            this->biases    = LinearAlgebra::Matrix(dimension, 1);
-            //this->a         = LinearAlgebra::Matrix(dimension, 1);
-            //this->z         = LinearAlgebra::Matrix(dimension, 1);
-
-            if(nextDimension != 0) {
-                this->weightsToNext = LinearAlgebra::Matrix(dimension, nextDimension);
+            if (nextLayerDimension != 0) {
+                this->weights2next = LinearAlgebra::Matrix(nextLayerDimension, dimension);
             }
         }
     };
 
     class NeuralNetwork {
         private:
-        std::vector<Layer> layers;
+        std::vector<Layer*> layers;
 
         public:
-        NeuralNetwork(const std::vector<size_t> &sizes) {
-            auto sizesCopy = sizes;
-            sizesCopy.push_back(0);
-            for(size_t l = 0; l < sizesCopy.size()-1; ++l) {
-                Layer layer(sizesCopy[l], sizesCopy[l+1]);
+        NeuralNetwork(const std::vector<size_t> &dimensions) {
+            this->layers = std::vector<Layer*>(dimensions.size());
+
+            auto temp = dimensions;
+            temp.push_back(0);
+
+            for(size_t l = 0; l < layers.size(); ++l) {
+                layers[l] = new Layer(temp[l], temp[l+1]);
             }
         }
 
         LinearAlgebra::Matrix feedForward(const LinearAlgebra::Matrix &Input) {
-            std::cout << "Here 1" << std::endl;
-            layers[0].z = LinearAlgebra::Matrix(Input);
-            std::cout << "Here 2" << std::endl;
-            layers[0].a = Input.vectorise(sigmoid);
+            /*x
+            for(size_t i = 0; i < layers.size(); ++i) {
+                std::cout << "Layer: " << i << std::endl;
+                std::cout << "z\n" << layers[i]->z.string() <<std::endl;
+            }
+            */
+
+            layers[0]->z = LinearAlgebra::Matrix(Input);
+            layers[0]->a = Input.vectorise(sigmoid);
 
 
             for(size_t i = 1; i < layers.size(); ++i) {
-                layers[i].z = (layers[i-1].weightsToNext * layers[i-1].a) + layers[i].biases;
-                layers[i].a = layers[i].z.vectorise(sigmoid);
+                printf(
+                    "Layer %zu -> %zu: (%zux%zu)x(%zux%zu)\n",
+                    i, i+1,
+                    layers[i-1]->weights2next.rows(),
+                    layers[i-1]->weights2next.columns(),
+                    layers[i-1]->a.rows(),
+                    layers[i-1]->a.columns()
+                );
+                layers[i]->z = (layers[i-1]->weights2next * layers[i-1]->a) + layers[i]->biases;
+                layers[i]->a = layers[i]->z.vectorise(sigmoid);
             }
 
-            return layers[layers.size() - 1].a; // Return activation of outputlayer
+            return layers[layers.size() - 1]->a; // Return activation of outputlayer
         }
 
         void train(
-            const std::vector<std::pair<LinearAlgebra::Matrix, LinearAlgebra::Matrix>> &trainingData,
+            const TrainingData &trainingData,
             const size_t epochs,
             const double learningRate
         ) {
@@ -79,17 +90,17 @@ namespace MachineLearning {
             std::vector<LinearAlgebra::Matrix> deltas(L+1);
 
             // delta in output layer
-            deltas[L] = (layers[L].a - expected).hadamardProduct(layers[L].z.vectorise(derivativeSigmoid));
+            deltas[L] = (layers[L]->a - expected).hadamardProduct(layers[L]->z.vectorise(derivativeSigmoid));
 
             for(size_t i = 1; i <= L; ++i) {
-                auto w_T = layers[L-i+1].weightsToNext.transpose();
+                auto w_T = layers[L-i+1]->weights2next.transpose();
 
-                deltas[L-i] = (w_T*deltas[L-i+1]).hadamardProduct(layers[L-i].z.vectorise(derivativeSigmoid));
+                deltas[L-i] = (w_T*deltas[L-i+1]).hadamardProduct(layers[L-i]->z.vectorise(derivativeSigmoid));
             }
 
             // Tweak Biases
             for(size_t l = 0; l < layers.size(); ++l) {
-                layers[l].biases = layers[l].biases - learningRate*deltas[l];
+                layers[l]->biases = layers[l]->biases - learningRate*deltas[l];
             }
         }
 

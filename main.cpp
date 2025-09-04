@@ -12,32 +12,25 @@ LinearAlgebra::Matrix testFunc(const LinearAlgebra::Matrix &Input) {
 int main() {
     MachineLearning::NeuralNetwork net({2, 3, 1});
 
-
     auto trainingData = MachineLearning::loadTrainingData("train.txt");
 
     net.train(
         trainingData,
-        100,
-        0.5
+        1e6,
+        0.1,
+        10000
     );
 
 
-    auto input = LinearAlgebra::Matrix({
-        {2, 2},
-        {1, 2}
-    });
 
-    std::cout << input.string() << std::endl;
+    LinearAlgebra::Matrix Input(2, 1);
 
-    auto newMrix = testFunc(input);
+    Input.at(0, 0) = 0;
+    Input.at(1, 0) = 1;
 
-    newMrix.at(0, 0) = 100;
+    auto predction = net.predict(Input);
 
-    std::cout << input.string() << std::endl;
-
-    //auto prediction = net.feedForward(input);
-
-    
+    std::cout << predction.string() << std::endl;
 
     return 0;
 }

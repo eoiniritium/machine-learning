@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <format>
 
 
 namespace LinearAlgebra {
@@ -92,8 +93,8 @@ namespace LinearAlgebra {
         Matrix operator*(const Matrix &other) const {
             if(this->noColumns != other.rows()) {
                 throw std::invalid_argument(
-                    (
-                        "Matrix multiplication: Cant multiply (%zux%zu)x(%zux%zu)",
+                    std::format(
+                        "Matrix multiplication: Cant multiply ({}x{})x({}x{})",
                         this->noRows,
                         this->noColumns,
                         other.rows(),
@@ -215,6 +216,16 @@ namespace LinearAlgebra {
             }
 
             return ret;
+        }
+
+        double sumOverColumn(const size_t column) const {
+            double sum = 0;
+
+            for(size_t row = 0; row < noRows; ++row) {
+                sum += this->at(row, column);
+            }
+
+            return sum;
         }
     };
 }

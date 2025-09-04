@@ -6,6 +6,7 @@
 
 
 #include <iostream>
+#include <format>
 #include <cmath>
 
 
@@ -41,49 +42,51 @@ namespace MachineLearning {
             }
         }
 
-        LinearAlgebra::Matrix feedForward(const LinearAlgebra::Matrix &Input) {
-            /*x
-            for(size_t i = 0; i < layers.size(); ++i) {
-                std::cout << "Layer: " << i << std::endl;
-                std::cout << "z\n" << layers[i]->z.string() <<std::endl;
-            }
-            */
-
-            layers[0]->z = LinearAlgebra::Matrix(Input);
-            layers[0]->a = Input.vectorise(sigmoid);
-
-
-            for(size_t i = 1; i < layers.size(); ++i) {
-                printf(
-                    "Layer %zu -> %zu: (%zux%zu)x(%zux%zu)\n",
-                    i, i+1,
-                    layers[i-1]->weights2next.rows(),
-                    layers[i-1]->weights2next.columns(),
-                    layers[i-1]->a.rows(),
-                    layers[i-1]->a.columns()
-                );
-                layers[i]->z = (layers[i-1]->weights2next * layers[i-1]->a) + layers[i]->biases;
-                layers[i]->a = layers[i]->z.vectorise(sigmoid);
-            }
-
-            return layers[layers.size() - 1]->a; // Return activation of outputlayer
+        LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix &Input) {
+            return this->feedForward(Input);
         }
 
         void train(
             const TrainingData &trainingData,
             const size_t epochs,
-            const double learningRate
+            const double learningRate,
+            const size_t outputFrequency = 0
         ) {
             for(size_t epoch = 0; epoch < epochs; ++epoch) {
+                LinearAlgebra::Matrix error(trainingData[0].second.rows(), 1);
+
                 for(size_t i = 0; i < trainingData.size(); ++i) {
-                    this->feedForward(trainingData[i].first);
+                    auto prediction = this->feedForward(trainingData[i].first);
                     this->backPropagation(trainingData[i].second, learningRate);
+
+                    if(outputFrequency) {
+                        error = error + (prediction - trainingData[i].second);
+                    }
+                } 
+
+                if(outputFrequency && epoch % outputFrequency == 0) {
+                    auto total = error.sumOverColumn(0);
+
+                    std::cout << std::format("Epoch: {} Error: {}", epoch, total) << std::endl;
                 }
             }
         }
 
 
         private:
+        LinearAlgebra::Matrix feedForward(const LinearAlgebra::Matrix &Input) {
+
+            layers[0]->z = LinearAlgebra::Matrix(Input);
+            layers[0]->a = Input.vectorise(sigmoid);
+
+
+            for(size_t i = 1; i < layers.size(); ++i) {
+                layers[i]->z = (layers[i-1]->weights2next * layers[i-1]->a) + layers[i]->biases;
+                layers[i]->a = layers[i]->z.vectorise(sigmoid);
+            }
+
+            return layers[layers.size() - 1]->a; // Return activation of outputlayer
+        }
 
         void backPropagation(const LinearAlgebra:: Matrix &expected, const double learningRate) {
             size_t L = layers.size() - 1; // Index of output layer
@@ -93,7 +96,7 @@ namespace MachineLearning {
             deltas[L] = (layers[L]->a - expected).hadamardProduct(layers[L]->z.vectorise(derivativeSigmoid));
 
             for(size_t i = 1; i <= L; ++i) {
-                auto w_T = layers[L-i+1]->weights2next.transpose();
+                auto w_T = layers[L-i]->weights2next.transpose();
 
                 deltas[L-i] = (w_T*deltas[L-i+1]).hadamardProduct(layers[L-i]->z.vectorise(derivativeSigmoid));
             }

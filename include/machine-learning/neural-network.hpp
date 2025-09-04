@@ -3,6 +3,7 @@
 #include "defs.hpp"
 
 #include "linear-algebra/matrix.hpp"
+#include "utils.hpp"
 
 
 #include <iostream>
@@ -14,14 +15,17 @@ namespace MachineLearning {
     class Layer {
         public:
         LinearAlgebra::Matrix z, a, biases, weights2next;
+        size_t dimension;
 
         Layer(const size_t dimension, const size_t nextLayerDimension) {
+            this->dimension = dimension;
+
             this->z      = LinearAlgebra::Matrix(dimension, 1);
             this->a      = LinearAlgebra::Matrix(dimension, 1);
-            this->biases = LinearAlgebra::Matrix(dimension, 1);
+            this->biases = LinearAlgebra::Matrix(dimension, 1, true);
 
             if (nextLayerDimension != 0) {
-                this->weights2next = LinearAlgebra::Matrix(nextLayerDimension, dimension);
+                this->weights2next = LinearAlgebra::Matrix(nextLayerDimension, dimension, true);
             }
         }
     };
@@ -29,6 +33,7 @@ namespace MachineLearning {
     class NeuralNetwork {
         private:
         std::vector<Layer*> layers;
+        utils::Logger logger;
 
         public:
         NeuralNetwork(const std::vector<size_t> &dimensions) {
@@ -40,6 +45,8 @@ namespace MachineLearning {
             for(size_t l = 0; l < layers.size(); ++l) {
                 layers[l] = new Layer(temp[l], temp[l+1]);
             }
+
+            this->logger = utils::Logger("log.txt");
         }
 
         LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix &Input) {
@@ -60,14 +67,14 @@ namespace MachineLearning {
                     this->backPropagation(trainingData[i].second, learningRate);
 
                     if(outputFrequency) {
-                        error = error + (prediction - trainingData[i].second);
+                        error = error + (prediction - trainingData[i].second).vectorise([](double x) {return std::abs(x);});
                     }
                 } 
 
                 if(outputFrequency && epoch % outputFrequency == 0) {
-                    auto total = error.sumOverColumn(0);
+                    double total = error.sumOverColumn(0);
 
-                    std::cout << std::format("Epoch: {} Error: {}", epoch, total) << std::endl;
+                    std::cout << std::format("Epoch: {} Total error: {}", epoch, total) << std::endl;
                 }
             }
         }
@@ -95,15 +102,23 @@ namespace MachineLearning {
             // delta in output layer
             deltas[L] = (layers[L]->a - expected).hadamardProduct(layers[L]->z.vectorise(derivativeSigmoid));
 
-            for(size_t i = 1; i <= L; ++i) {
-                auto w_T = layers[L-i]->weights2next.transpose();
+            for(size_t l = L; l--; ) {
+                auto w_T = layers[l]->weights2next.transpose();
+                auto sigmaPrime = layers[l]->z.vectorise(derivativeSigmoid);
 
-                deltas[L-i] = (w_T*deltas[L-i+1]).hadamardProduct(layers[L-i]->z.vectorise(derivativeSigmoid));
+                deltas[l] = (w_T * deltas[l+1]).hadamardProduct(sigmaPrime);
             }
 
             // Tweak Biases
             for(size_t l = 0; l < layers.size(); ++l) {
-                layers[l]->biases = layers[l]->biases - learningRate*deltas[l];
+                auto m = layers[l]->dimension;
+                
+                layers[l]->biases = layers[l]->biases - learningRate * deltas[l];
+            }
+            
+            // Tweak Weights
+            for(size_t l = 0; l < layers.size()-1; ++l) {
+                layers[l]->weights2next = layers[l]->weights2next - learningRate * deltas[l+1] * layers[l]->a.transpose();
             }
         }
 

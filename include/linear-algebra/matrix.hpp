@@ -5,8 +5,8 @@
 #include <string>
 #include <stdexcept>
 #include <functional>
-#include <iostream>
 #include <format>
+#include <random>
 
 
 namespace LinearAlgebra {
@@ -18,12 +18,22 @@ namespace LinearAlgebra {
         public:
         Matrix() {};
 
-        Matrix(const size_t rows, const size_t columns, double defaultValue = 0.0) {
+        Matrix(const size_t rows, const size_t columns, const bool random = false, const double defaultValue = 0.0) {
             this->noRows = rows;
             this->noColumns = columns;
 
 
             this->matrix = std::vector<double>(rows * columns, defaultValue);
+
+            if(random) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_real_distribution distribution(-1.0, 1.0);
+
+                for(size_t i = 0; i < rows * columns; ++i) {
+                    this->matrix[i] = distribution(gen);
+                }
+            }
         }
 
         Matrix(const std::vector<std::vector<double>> mat) {
@@ -64,7 +74,15 @@ namespace LinearAlgebra {
         // Matrix Addition
         Matrix operator+(const Matrix &other) const {
             if(this->noRows != other.rows() || this->noColumns != other.columns()) {
-                throw std::invalid_argument("Both Matricies must be the same size");
+                throw std::invalid_argument(
+                    std::format(
+                        "Addition/Subtraction: Both Matricies must be the same size. LHS: ({}x{}). RHS: ({}x{})",
+                        this->noRows,
+                        this->noColumns,
+                        other.rows(),
+                        other.columns()
+                    )
+                );
             }
 
             Matrix ret(*this);

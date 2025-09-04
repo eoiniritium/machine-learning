@@ -1,13 +1,10 @@
 #include <iostream>
+
 #include "linear-algebra/matrix.hpp"
 #include "machine-learning/neural-network.hpp"
 #include "machine-learning/load-data.hpp"
 
-LinearAlgebra::Matrix testFunc(const LinearAlgebra::Matrix &Input) {
-    const auto newMatrix = Input;
 
-    return newMatrix;
-}
 
 int main() {
     MachineLearning::NeuralNetwork net({2, 3, 1});
@@ -16,12 +13,10 @@ int main() {
 
     net.train(
         trainingData,
-        1e6,
-        0.1,
-        10000
+        5e5,
+        0.01,
+        1e5
     );
-
-
 
     LinearAlgebra::Matrix Input(2, 1);
 

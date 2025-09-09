@@ -7,6 +7,7 @@
 #include <functional>
 #include <format>
 #include <random>
+#include <utility>
 
 
 namespace LinearAlgebra {
@@ -18,22 +19,27 @@ namespace LinearAlgebra {
         public:
         Matrix() {};
 
-        Matrix(const size_t rows, const size_t columns, const bool random = false, const double defaultValue = 0.0) {
+        Matrix(const size_t rows, const size_t columns, const std::pair<double, double> randomRange) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution distribution(randomRange.first, randomRange.second);
+
+            this->noRows = rows;
+            this->noColumns = columns;
+
+            this->matrix = std::vector<double>(rows * columns, 0);
+
+            for(size_t i = 0; i < rows * columns; ++i) {
+                this->matrix[i] = distribution(gen);
+            }
+        };
+
+        Matrix(const size_t rows, const size_t columns, const double defaultValue = 0.0) {
             this->noRows = rows;
             this->noColumns = columns;
 
 
             this->matrix = std::vector<double>(rows * columns, defaultValue);
-
-            if(random) {
-                std::random_device rd;
-                std::mt19937 gen(rd());
-                std::uniform_real_distribution distribution(-1.0, 1.0);
-
-                for(size_t i = 0; i < rows * columns; ++i) {
-                    this->matrix[i] = distribution(gen);
-                }
-            }
         }
 
         Matrix(const std::vector<std::vector<double>> mat) {

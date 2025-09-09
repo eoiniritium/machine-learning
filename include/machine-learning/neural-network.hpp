@@ -8,125 +8,168 @@
 
 #include <iostream>
 #include <format>
-#include <cmath>
+
+#include <functional>
+#include <algorithm>
+#include <random>
 
 
 namespace MachineLearning {
+
     class Layer {
         public:
-        LinearAlgebra::Matrix z, a, biases, weights2next;
-        size_t dimension;
+        LinearAlgebra::Matrix w; // Weight to this layer
+        LinearAlgebra::Matrix b; // Biases
+        LinearAlgebra::Matrix z;
+        LinearAlgebra::Matrix a;
+        
+        Layer(
+            const size_t prevDimension,
+            const size_t dimension,
+            const std::pair<double, double> randomRange
+        ) {
+            this->w = LinearAlgebra::Matrix(dimension, prevDimension, randomRange);
+            this->b = LinearAlgebra::Matrix(dimension, 1, randomRange);
+            this->a = LinearAlgebra::Matrix(dimension, 1, 0);
+            this->z = LinearAlgebra::Matrix(dimension, 1, 0);
+        }
 
-        Layer(const size_t dimension, const size_t nextLayerDimension) {
-            this->dimension = dimension;
-
-            this->z      = LinearAlgebra::Matrix(dimension, 1);
-            this->a      = LinearAlgebra::Matrix(dimension, 1);
-            this->biases = LinearAlgebra::Matrix(dimension, 1, true);
-
-            if (nextLayerDimension != 0) {
-                this->weights2next = LinearAlgebra::Matrix(nextLayerDimension, dimension, true);
-            }
+        size_t dimension() const {
+            return a.columns();
         }
     };
 
     class NeuralNetwork {
         private:
+        CostDerivativeFunc costPrime;
+        ActivationFunc sigma, sigmaPrime;
+
         std::vector<Layer*> layers;
-        utils::Logger logger;
-
+        
         public:
-        NeuralNetwork(const std::vector<size_t> &dimensions) {
-            this->layers = std::vector<Layer*>(dimensions.size());
 
-            auto temp = dimensions;
-            temp.push_back(0);
+        NeuralNetwork(
+            const std::vector<size_t> &dimensions,
+            const std::pair<double, double> startRandomRange,
+            const CostDerivativeFunc costPrime,
+            const ActivationFunc sigma,
+            const ActivationFunc sigmaPrime
+        ) {
+            /*
+                Neural Network Constructor
 
-            for(size_t l = 0; l < layers.size(); ++l) {
-                layers[l] = new Layer(temp[l], temp[l+1]);
+                Arguments
+                    dimension        - dimension of each layer.
+                    startRandomRange - the range of random numbers the weights and biases should be initialised with
+                    costPrime        - (Matrix expected, Matrix predicted) -> Matrix. Derivative of the cost function
+            */
+            if(dimensions.size() == 0) { throw std::invalid_argument("NeuralNetwork: Must have atleast 1 layer"); }
+            
+            this->costPrime = costPrime;
+            this->sigma = sigma;
+            this->sigmaPrime = sigmaPrime;
+
+            
+            // Input Layer. Has no previous layer
+            layers.push_back(new Layer(
+                0,
+                dimensions[0],
+                startRandomRange
+            ));
+
+            for(size_t l = 1; l < dimensions.size(); ++l) {
+                layers.push_back(new Layer(
+                    dimensions[l-1],
+                    dimensions[l],
+                    startRandomRange
+                ));
             }
-
-            this->logger = utils::Logger("log.txt");
         }
 
-        LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix &Input) {
-            return this->feedForward(Input);
+        ~NeuralNetwork() {
+            // TODO - No memory leaks please!
+        }
+
+        LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix & Input) {
+            this->feedForward(Input);
+
+            return this->layers.back()->a;
         }
 
         void train(
             const TrainingData &trainingData,
+            const size_t batchSize,
             const size_t epochs,
             const double learningRate,
             const size_t outputFrequency = 0
         ) {
+            auto rng = std::default_random_engine {};
             for(size_t epoch = 0; epoch < epochs; ++epoch) {
-                LinearAlgebra::Matrix error(trainingData[0].second.rows(), 1);
+                // Shuffle data
+                auto data = trainingData;
+                std::shuffle(std::begin(data), std::end(data), rng);
 
-                for(size_t i = 0; i < trainingData.size(); ++i) {
-                    auto prediction = this->feedForward(trainingData[i].first);
-                    this->backPropagation(trainingData[i].second, learningRate);
-
-                    if(outputFrequency) {
-                        error = error + (prediction - trainingData[i].second).vectorise([](double x) {return std::abs(x);});
+                while(!data.empty()) {
+                    std::vector<std::vector<LinearAlgebra::Matrix>> batch;
+                    for(size_t i = 0; i < batchSize && !data.empty(); ++i) {
+                        auto pair = data.back();
+                        
+                        this->feedForward(pair.first);
+                        batch.push_back(this->backPropagate(pair.second));
+                        
+                        data.pop_back();
                     }
-                } 
 
-                if(outputFrequency && epoch % outputFrequency == 0) {
-                    double total = error.sumOverColumn(0);
-
-                    std::cout << std::format("Epoch: {} Total error: {}", epoch, total) << std::endl;
+                    this->updateBatches(batch, learningRate);
                 }
             }
         }
 
-
         private:
-        LinearAlgebra::Matrix feedForward(const LinearAlgebra::Matrix &Input) {
+        void feedForward(const LinearAlgebra::Matrix & Input) {
+            layers[0]->a = Input;
 
-            layers[0]->z = LinearAlgebra::Matrix(Input);
-            layers[0]->a = Input.vectorise(sigmoid);
-
-
-            for(size_t i = 1; i < layers.size(); ++i) {
-                layers[i]->z = (layers[i-1]->weights2next * layers[i-1]->a) + layers[i]->biases;
-                layers[i]->a = layers[i]->z.vectorise(sigmoid);
+            for(size_t l = 1; l < layers.size(); ++l) {
+                layers[l]->z = layers[l]->w * layers[l-1]->a + layers[l]->b;
+                layers[l]->a = layers[l]->z.vectorise(this->sigma);
             }
-
-            return layers[layers.size() - 1]->a; // Return activation of outputlayer
         }
 
-        void backPropagation(const LinearAlgebra:: Matrix &expected, const double learningRate) {
-            size_t L = layers.size() - 1; // Index of output layer
-            std::vector<LinearAlgebra::Matrix> deltas(L+1);
+        std::vector<LinearAlgebra::Matrix> backPropagate(const LinearAlgebra::Matrix &expected) const {
+            std::vector<LinearAlgebra::Matrix> deltas(this->layers.size()-1);
 
-            // delta in output layer
-            deltas[L] = (layers[L]->a - expected).hadamardProduct(layers[L]->z.vectorise(derivativeSigmoid));
+            deltas[deltas.size() - 1] = this->costPrime(expected, layers.back()->a).hadamardProduct(layers.back()->z);
 
-            for(size_t l = L; l--; ) {
-                auto w_T = layers[l]->weights2next.transpose();
-                auto sigmaPrime = layers[l]->z.vectorise(derivativeSigmoid);
+            for(size_t i = deltas.size()-1; i--;) {
+                size_t l = i + 1; // I think
 
-                deltas[l] = (w_T * deltas[l+1]).hadamardProduct(sigmaPrime);
-            }
-
-            // Tweak Biases
-            for(size_t l = 0; l < layers.size(); ++l) {
-                auto m = layers[l]->dimension;
+                auto LHS = (layers[l+1]->w.transpose() * deltas[i+1]);
+                auto RHS = layers[l]->z.vectorise(this->sigmaPrime);
                 
-                layers[l]->biases = layers[l]->biases - learningRate * deltas[l];
+                deltas[i] = LHS.hadamardProduct(RHS);
             }
-            
-            // Tweak Weights
-            for(size_t l = 0; l < layers.size()-1; ++l) {
-                layers[l]->weights2next = layers[l]->weights2next - learningRate * deltas[l+1] * layers[l]->a.transpose();
-            }
+
+            return deltas;
         }
 
-        static double sigmoid(double x) {
-            return 1/(1+exp(x));
-        }
-        static double derivativeSigmoid(double x) {
-            return x * (1 - x);
+        void updateBatches(const std::vector<std::vector<LinearAlgebra::Matrix>> &deltasVec, const double learningRate) {
+            double m = deltasVec.size();
+
+            for(size_t l = 1; l < layers.size(); ++l) {
+                
+                LinearAlgebra::Matrix summandWeights(layers[l]->w.rows(), layers[l]->w.columns(), 0.0);
+                LinearAlgebra::Matrix summandBiases(layers[l]->b.rows(), layers[l]->b.columns(), 0.0);
+
+                size_t deltas_i = l - 1; // Reindex from layers
+
+                for(const auto & deltas : deltasVec) {
+                    summandWeights = summandWeights + deltas[deltas_i] * layers[l-1]->a.transpose();
+                    summandBiases = summandBiases + deltas[deltas_i];
+                }
+
+                layers[l]->w = layers[l]->w - (learningRate/m) * summandWeights;
+                layers[l]->b = layers[l]->b - (learningRate/m) * summandBiases;
+            }
         }
     };
 }

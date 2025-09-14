@@ -5,10 +5,10 @@
 #include "machine-learning/neural-network.hpp"
 #include "machine-learning/load-data.hpp"
 
-const double alpha = 0.01;
+const double alpha = 0.02;
 const double learningRate = 0.1;
-const size_t epochs = 1e4;
-const size_t batchSize = 2;
+const size_t epochs = 5e4;
+const size_t batchSize = 1;
 
 LinearAlgebra::Matrix costPrime (const LinearAlgebra::Matrix &Expected, const LinearAlgebra::Matrix &Predicted) {
     return Predicted - Expected;
@@ -43,7 +43,7 @@ int main() {
     LinearAlgebra::Matrix Input(2, 1);
 
     Input.at(0, 0) = 0;
-    Input.at(1, 0) = 0;
+    Input.at(1, 0) = 1;
 
     auto predction = net.predict(Input);
 

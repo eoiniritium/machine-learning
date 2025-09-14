@@ -3,5 +3,5 @@ default:
 	./main.exe
 
 darwin:
-	clang++ main.cpp -o main -std=c++20 -I include/
-	./main
+	clang++ main.cpp -o main.out -std=c++20 -I include/
+	./main.out

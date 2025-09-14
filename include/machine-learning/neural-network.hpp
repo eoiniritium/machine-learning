@@ -128,11 +128,11 @@ namespace MachineLearning {
                         
                         auto prediction = this->predict(pair.first);
                         batch.push_back(this->backPropagate(pair.second));
-                        
+
                         data.pop_back();
 
                         if(outputFrequency) {
-                            epochError = epochError + (1.0/N)*(prediction - pair.second).vectorise(fabs);
+                            epochError = epochError + (1.0/N)*(prediction - pair.second).vectorise([](const double x) {return fabs(x);});
                         }
                     }
 

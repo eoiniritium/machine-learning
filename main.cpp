@@ -58,11 +58,10 @@ void loadFromFile() {
     Input.at(0, 0) = 0;
     Input.at(1, 0) = 0;
 
-    std::cout << net.predict(Input).string();
+    std::cout << net.predict(Input).string() << std::endl;
 }
 
 int main() {
-    
     //train();
     loadFromFile();
 

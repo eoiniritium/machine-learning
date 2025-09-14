@@ -6,9 +6,10 @@
 #include "machine-learning/load-data.hpp"
 
 const double alpha = 0.02;
-const double learningRate = 0.1;
-const size_t epochs = 5e4;
+const double learningRate = 0.3;
+const size_t epochs = 4e4;
 const size_t batchSize = 1;
+const size_t outputFrequency = 1000;
 
 LinearAlgebra::Matrix costPrime (const LinearAlgebra::Matrix &Expected, const LinearAlgebra::Matrix &Predicted) {
     return Predicted - Expected;
@@ -26,7 +27,7 @@ double leakyRELUPrime(const double x) {
 
 int main() {
     MachineLearning::NeuralNetwork net(
-        {2, 2, 1},
+        {2, 3, 2, 1},
         leakyRELU,
         leakyRELUPrime,
         costPrime
@@ -37,7 +38,8 @@ int main() {
         trainingData,
         batchSize,
         epochs,
-        learningRate
+        learningRate,
+        outputFrequency
     );
 
     LinearAlgebra::Matrix Input(2, 1);

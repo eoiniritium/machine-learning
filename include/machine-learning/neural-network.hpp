@@ -14,6 +14,7 @@
 #include <functional>
 #include <algorithm>
 #include <random>
+#include <cmath>
 
 
 namespace MachineLearning {
@@ -72,23 +73,36 @@ namespace MachineLearning {
             const size_t outputFrequency = 0
         ) {
             auto rng = std::default_random_engine {};
+            
+            const size_t N = trainingData.size();
+
             for(size_t epoch = 0; epoch < epochs; ++epoch) {
                 // Shuffle data
                 auto data = trainingData;
                 std::shuffle(std::begin(data), std::end(data), rng);
+
+                LinearAlgebra::Matrix epochError(layers.back()->dimension(), 1, 0.0);
 
                 while(!data.empty()) {
                     std::vector<DeltasActivations> batch;
                     for(size_t i = 0; i < batchSize && !data.empty(); ++i) {
                         auto pair = data.back();
                         
-                        this->feedForward(pair.first);
+                        auto prediction = this->predict(pair.first);
                         batch.push_back(this->backPropagate(pair.second));
                         
                         data.pop_back();
+
+                        if(outputFrequency) {
+                            epochError = epochError + (1.0/N)*(prediction - pair.second).vectorise(fabs);
+                        }
                     }
 
                     this->updateBatches(batch, learningRate);
+                }
+
+                if (outputFrequency && epoch % outputFrequency == 0) {
+                    std::cout << std::format("(Epoch: {}) Average error: {}", epoch, epochError.sumOverColumn(0)) << std::endl;
                 }
             }
         }

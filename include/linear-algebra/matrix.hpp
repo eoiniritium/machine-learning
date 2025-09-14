@@ -236,5 +236,20 @@ namespace LinearAlgebra {
 
             return sum;
         }
+
+        std::vector<std::vector<double>> get2DVector() const {
+            std::vector<std::vector<double>> ret;
+
+            for(size_t row = 0; row < noRows; ++row) {
+                std::vector<double> rowVec;
+                for(size_t col = 0; col < noColumns; ++col) {
+                    rowVec.push_back(this->at(row, col));
+                }
+
+                ret.push_back(rowVec);
+            }
+
+            return ret;
+        }
     };
 }

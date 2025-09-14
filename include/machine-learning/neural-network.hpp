@@ -31,12 +31,13 @@ namespace MachineLearning {
             CostDerivativeFunc costPrime
         ) {
             /*
-                Neural Network Constructor
+                New Neural Network Constructor
 
                 Arguments
-                    dimension        - dimension of each layer.
-                    startRandomRange - the range of random numbers the weights and biases should be initialised with
-                    costPrime        - (Matrix expected, Matrix predicted) -> Matrix. Derivative of the cost function
+                    dimension  - dimension of each layer.
+                    sigma      - (double) -> double. Activation function
+                    sigmaPrime - (double) -> double. Derivative of the activation function
+                    costPrime  - (Matrix expected, Matrix predicted) -> Matrix. Derivative of the cost function
             */
             if(dimensions.size() == 0) { throw std::invalid_argument("NeuralNetwork: Must have atleast 1 layer"); }
 
@@ -44,20 +45,57 @@ namespace MachineLearning {
             this->sigmaPrime = sigmaPrime;
             this->costPrime = costPrime;
 
-            // Input Layer. Has no previous layer
-            layers.push_back(new Layer(0, dimensions[0]));
+            // Input Layer. Has no previous layer. (1, N) to make writing to file easier
+            layers.push_back(new Layer(1, dimensions[0]));
 
             for(size_t l = 1; l < dimensions.size(); ++l) {
                 layers.push_back(new Layer(dimensions[l-1], dimensions[l]));
             }
         }
 
+        NeuralNetwork(
+            const NetworkParameters &networkParameters,
+            ActivationFunc sigma, ActivationFunc sigmaPrime,
+            CostDerivativeFunc costPrime
+        ) {
+            /*
+                Neural Network from existing weights and biases constructor
+
+                Arguments
+                    networkParameters - Network's weights and biases loaded from file via MachineLearning::loadModel
+                    sigma             - function: (double) -> double. Activation function
+                    sigmaPrime        - function: (double) -> double. Derivative of the activation function
+                    costPrime         - function: (Matrix expected, Matrix predicted) -> Matrix. Derivative of the cost function
+            */
+
+            this->sigma = sigma;
+            this->sigmaPrime = sigmaPrime;
+            this->costPrime = costPrime;
+
+            for(size_t l = 0; l < networkParameters.size(); ++l) {
+                layers.push_back(new Layer(networkParameters[l]));
+            }
+        }
+
         ~NeuralNetwork() {
             for(size_t i = 0; i < this->layers.size(); ++i) {
                 delete this->layers[i];
-                this->layers[i] = nullptr;
             }
         }
+
+        NetworkParameters getWeightsAndBiases() const {
+            NetworkParameters ret;
+            for(size_t l = 0; l < this->layers.size(); ++l) {
+                LayerParameters layer;
+                layer.weights = this->layers[l]->w;
+                layer.biases  = this->layers[l]->b;
+
+                ret.push_back(layer);
+            }
+
+            return ret;
+        }
+
 
         LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix & Input) {
             this->feedForward(Input);
@@ -66,7 +104,7 @@ namespace MachineLearning {
         }
 
         void train(
-            const TrainingData &trainingData,
+            const TrainingData trainingData,
             const size_t batchSize,
             const size_t epochs,
             const double learningRate,

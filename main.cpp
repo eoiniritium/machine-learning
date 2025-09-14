@@ -3,11 +3,11 @@
 
 #include "linear-algebra/matrix.hpp"
 #include "machine-learning/neural-network.hpp"
-#include "machine-learning/load-data.hpp"
+#include "machine-learning/read-write-data.hpp"
 
 const double alpha = 0.02;
 const double learningRate = 0.3;
-const size_t epochs = 4e4;
+const size_t epochs = 5e4;
 const size_t batchSize = 1;
 const size_t outputFrequency = 1000;
 
@@ -25,9 +25,9 @@ double leakyRELUPrime(const double x) {
     return alpha;
 }
 
-int main() {
+void train() {
     MachineLearning::NeuralNetwork net(
-        {2, 3, 2, 1},
+        {2, 5, 2, 1},
         leakyRELU,
         leakyRELUPrime,
         costPrime
@@ -42,15 +42,29 @@ int main() {
         outputFrequency
     );
 
+    MachineLearning::writeModel(net, "model.txt");
+}
+
+void loadFromFile() {
+    MachineLearning::NeuralNetwork net(
+        MachineLearning::loadModel("model.txt"),
+        leakyRELU,
+        leakyRELUPrime,
+        costPrime
+    );
+
     LinearAlgebra::Matrix Input(2, 1);
 
     Input.at(0, 0) = 0;
-    Input.at(1, 0) = 1;
+    Input.at(1, 0) = 0;
 
-    auto predction = net.predict(Input);
+    std::cout << net.predict(Input).string();
+}
 
-    std::cout << predction.string() << std::endl;
-
+int main() {
+    
+    //train();
+    loadFromFile();
 
     return 0;
 }

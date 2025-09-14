@@ -1,8 +1,10 @@
 #pragma once
 
 #include "defs.hpp"
+#include "layer.hpp"
 
 #include "linear-algebra/matrix.hpp"
+
 #include "utils.hpp"
 
 
@@ -16,44 +18,16 @@
 
 namespace MachineLearning {
 
-    class Layer {
-        public:
-        LinearAlgebra::Matrix w; // Weight to this layer
-        LinearAlgebra::Matrix b; // Biases
-        LinearAlgebra::Matrix z;
-        LinearAlgebra::Matrix a;
-        
-        Layer(
-            const size_t prevDimension,
-            const size_t dimension,
-            const std::pair<double, double> randomRange
-        ) {
-            this->w = LinearAlgebra::Matrix(dimension, prevDimension, randomRange);
-            this->b = LinearAlgebra::Matrix(dimension, 1, randomRange);
-            this->a = LinearAlgebra::Matrix(dimension, 1, 0);
-            this->z = LinearAlgebra::Matrix(dimension, 1, 0);
-        }
-
-        size_t dimension() const {
-            return a.columns();
-        }
-    };
-
     class NeuralNetwork {
         private:
-        CostDerivativeFunc costPrime;
-        ActivationFunc sigma, sigmaPrime;
-
         std::vector<Layer*> layers;
-        
+        ActivationFunc sigma, sigmaPrime;
+        CostDerivativeFunc costPrime;
         public:
-
         NeuralNetwork(
             const std::vector<size_t> &dimensions,
-            const std::pair<double, double> startRandomRange,
-            const CostDerivativeFunc costPrime,
-            const ActivationFunc sigma,
-            const ActivationFunc sigmaPrime
+            ActivationFunc sigma, ActivationFunc sigmaPrime,
+            CostDerivativeFunc costPrime
         ) {
             /*
                 Neural Network Constructor
@@ -64,30 +38,24 @@ namespace MachineLearning {
                     costPrime        - (Matrix expected, Matrix predicted) -> Matrix. Derivative of the cost function
             */
             if(dimensions.size() == 0) { throw std::invalid_argument("NeuralNetwork: Must have atleast 1 layer"); }
-            
-            this->costPrime = costPrime;
+
             this->sigma = sigma;
             this->sigmaPrime = sigmaPrime;
+            this->costPrime = costPrime;
 
-            
             // Input Layer. Has no previous layer
-            layers.push_back(new Layer(
-                0,
-                dimensions[0],
-                startRandomRange
-            ));
+            layers.push_back(new Layer(0, dimensions[0]));
 
             for(size_t l = 1; l < dimensions.size(); ++l) {
-                layers.push_back(new Layer(
-                    dimensions[l-1],
-                    dimensions[l],
-                    startRandomRange
-                ));
+                layers.push_back(new Layer(dimensions[l-1], dimensions[l]));
             }
         }
 
         ~NeuralNetwork() {
-            // TODO - No memory leaks please!
+            for(size_t i = 0; i < this->layers.size(); ++i) {
+                delete this->layers[i];
+                this->layers[i] = nullptr;
+            }
         }
 
         LinearAlgebra::Matrix predict(const LinearAlgebra::Matrix & Input) {
@@ -110,7 +78,7 @@ namespace MachineLearning {
                 std::shuffle(std::begin(data), std::end(data), rng);
 
                 while(!data.empty()) {
-                    std::vector<std::vector<LinearAlgebra::Matrix>> batch;
+                    std::vector<DeltasActivations> batch;
                     for(size_t i = 0; i < batchSize && !data.empty(); ++i) {
                         auto pair = data.back();
                         
@@ -135,13 +103,23 @@ namespace MachineLearning {
             }
         }
 
-        std::vector<LinearAlgebra::Matrix> backPropagate(const LinearAlgebra::Matrix &expected) const {
+        DeltasActivations backPropagate(const LinearAlgebra::Matrix &expected) const {
             std::vector<LinearAlgebra::Matrix> deltas(this->layers.size()-1);
+            std::vector<LinearAlgebra::Matrix> activations(this->layers.size());
 
-            deltas[deltas.size() - 1] = this->costPrime(expected, layers.back()->a).hadamardProduct(layers.back()->z);
+
+            // Save activations
+            for(size_t l = 0; l < this->layers.size(); ++l) {
+                activations[l] = this->layers[l]->a;
+            }
+
+            // Calculate Deltas
+            auto LHS = this->costPrime(expected, layers.back()->a);
+            auto RHS = layers.back()->z.vectorise(this->sigmaPrime);
+            deltas[deltas.size() - 1] = LHS.hadamardProduct(RHS);
 
             for(size_t i = deltas.size()-1; i--;) {
-                size_t l = i + 1; // I think
+                size_t l = i + 1;
 
                 auto LHS = (layers[l+1]->w.transpose() * deltas[i+1]);
                 auto RHS = layers[l]->z.vectorise(this->sigmaPrime);
@@ -149,21 +127,26 @@ namespace MachineLearning {
                 deltas[i] = LHS.hadamardProduct(RHS);
             }
 
-            return deltas;
+            DeltasActivations ret;
+            ret.deltas = deltas;
+            ret.activations = activations;
+            return ret;
         }
 
-        void updateBatches(const std::vector<std::vector<LinearAlgebra::Matrix>> &deltasVec, const double learningRate) {
+        void updateBatches(const std::vector<DeltasActivations> &deltasVec, const double learningRate) {
             double m = deltasVec.size();
 
             for(size_t l = 1; l < layers.size(); ++l) {
-                
+                size_t deltas_i = l - 1; // Reindex from layers
+
                 LinearAlgebra::Matrix summandWeights(layers[l]->w.rows(), layers[l]->w.columns(), 0.0);
                 LinearAlgebra::Matrix summandBiases(layers[l]->b.rows(), layers[l]->b.columns(), 0.0);
 
-                size_t deltas_i = l - 1; // Reindex from layers
-
-                for(const auto & deltas : deltasVec) {
-                    summandWeights = summandWeights + deltas[deltas_i] * layers[l-1]->a.transpose();
+                for(const DeltasActivations &deltasActivation : deltasVec) {
+                    auto deltas = deltasActivation.deltas;
+                    auto activations =  deltasActivation.activations;
+                    
+                    summandWeights = summandWeights + deltas[deltas_i] * activations[l-1].transpose();
                     summandBiases = summandBiases + deltas[deltas_i];
                 }
 
@@ -171,5 +154,6 @@ namespace MachineLearning {
                 layers[l]->b = layers[l]->b - (learningRate/m) * summandBiases;
             }
         }
+
     };
 }

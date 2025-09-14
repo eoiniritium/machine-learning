@@ -5,39 +5,45 @@
 #include "machine-learning/neural-network.hpp"
 #include "machine-learning/load-data.hpp"
 
-LinearAlgebra::Matrix costFunction (const LinearAlgebra::Matrix &Expected, const LinearAlgebra::Matrix &Predicted) {
-    return Expected - Predicted;
+const double alpha = 0.01;
+const double learningRate = 0.1;
+const size_t epochs = 1e4;
+const size_t batchSize = 2;
+
+LinearAlgebra::Matrix costPrime (const LinearAlgebra::Matrix &Expected, const LinearAlgebra::Matrix &Predicted) {
+    return Predicted - Expected;
 }
 
-double sigmoid(const double x) {
-    return 1.0/(1.0+exp(x));
+double leakyRELU(const double x) {
+    if (x > 0) return x;
+    return alpha*x;
 }
 
-double sigmoidPrime(const double x) {
-    return x * (1.0 - x);
+double leakyRELUPrime(const double x) {
+    if (x > 0) return 1.0;
+    return alpha;
 }
 
 int main() {
     MachineLearning::NeuralNetwork net(
         {2, 2, 1},
-        std::make_pair(0.0, 0.1),
-        costFunction,
-        sigmoid,
-        sigmoidPrime
+        leakyRELU,
+        leakyRELUPrime,
+        costPrime
     );
 
     auto trainingData = MachineLearning::loadTrainingData("train.txt");
     net.train(
         trainingData,
-        2,
-        1e4,
-        0.5
+        batchSize,
+        epochs,
+        learningRate
     );
 
     LinearAlgebra::Matrix Input(2, 1);
 
-    Input.at(0, 0) = 1;
-    Input.at(1, 0) = 1;
+    Input.at(0, 0) = 0;
+    Input.at(1, 0) = 0;
 
     auto predction = net.predict(Input);
 

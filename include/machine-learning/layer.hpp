@@ -12,7 +12,7 @@ namespace MachineLearning {
         LinearAlgebra::Matrix b; // Biases
         LinearAlgebra::Matrix z;
         LinearAlgebra::Matrix a;
-        
+
         Layer(
             const size_t prevDimension,
             const size_t dimension,
@@ -35,14 +35,14 @@ namespace MachineLearning {
 
                    this->w.at(row, column) = n(gen);
                 }
-                
+
             }
-            
+
         }
 
         Layer(const LayerParameters parameters) {
             size_t dimension = parameters.biases.rows();
-            
+
             this->w = parameters.weights;
             this->b = parameters.biases;
             this->z = LinearAlgebra::Matrix(dimension, 1);

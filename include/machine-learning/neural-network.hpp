@@ -111,7 +111,7 @@ namespace MachineLearning {
             const size_t outputFrequency = 0
         ) {
             auto rng = std::default_random_engine {};
-            
+
             const size_t N = trainingData.size();
 
             for(size_t epoch = 0; epoch < epochs; ++epoch) {
@@ -125,7 +125,7 @@ namespace MachineLearning {
                     std::vector<DeltasActivations> batch;
                     for(size_t i = 0; i < batchSize && !data.empty(); ++i) {
                         auto pair = data.back();
-                        
+
                         auto prediction = this->predict(pair.first);
                         batch.push_back(this->backPropagate(pair.second));
 
@@ -175,7 +175,7 @@ namespace MachineLearning {
 
                 auto LHS = (layers[l+1]->w.transpose() * deltas[i+1]);
                 auto RHS = layers[l]->z.vectorise(this->sigmaPrime);
-                
+
                 deltas[i] = LHS.hadamardProduct(RHS);
             }
 

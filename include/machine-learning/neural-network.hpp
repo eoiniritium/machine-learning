@@ -131,7 +131,7 @@ namespace MachineLearning {
 
                         data.pop_back();
 
-                        if(outputFrequency) {
+                        if(outputFrequency && epoch % outputFrequency == 0) {
                             epochError = epochError + (1.0/N)*(prediction - pair.second).vectorise([](const double x) {return fabs(x);});
                         }
                     }

@@ -56,7 +56,7 @@ void loadFromFile() {
     LinearAlgebra::Matrix Input(2, 1);
 
     Input.at(0, 0) = 1;
-    Input.at(1, 0) = 1;
+    Input.at(1, 0) = 0;
 
     std::cout << net.predict(Input).string() << std::endl;
 }

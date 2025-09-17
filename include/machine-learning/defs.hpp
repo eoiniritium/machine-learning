@@ -10,6 +10,7 @@ namespace MachineLearning {
     };
 
     struct LayerParameters {
+        size_t dimension;
         LinearAlgebra::Matrix weights;
         LinearAlgebra::Matrix biases;
     };

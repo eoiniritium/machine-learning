@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <script>
+    var Module = {
+      onRuntimeInitialized: function() {
+        fetch("model.txt")
+            .then((res) => res.text())
+            .then((text) => {
+                console.log(text)
+                console.log(Module.myMain(text, "0,0"))
+        });
+      }
+    };
+  </script>
+  <script src="quick_example.js"></script>
+</html>

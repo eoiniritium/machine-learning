@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <iterator>
+#include <format>
 
 
 namespace utils {
@@ -18,5 +19,16 @@ namespace utils {
         }
 
         return tokens;
+    }
+
+    template <typename T>
+    std::string join(const std::string &joinChar, const std::vector<T> &vec) {
+        std::string ret = std::to_string(vec[0]);
+
+        for(size_t i = 1; i < vec.size(); ++i) {
+            ret += std::format("{}{}", joinChar, std::to_string(vec[i]));
+        }
+
+        return ret;
     }
 }

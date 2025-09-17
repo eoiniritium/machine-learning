@@ -50,6 +50,17 @@ namespace MachineLearning {
         std::string line;
 
         std::vector<std::vector<double>> weights, biases;
+        
+        // First layer
+        std::getline(file, line);
+        size_t firstLayerDimension = std::stod(utils::split(line, ' ')[0]);
+        LayerParameters firstLayer;
+        firstLayer.weights = LinearAlgebra::Matrix(firstLayerDimension, 0);
+        firstLayer.biases  = LinearAlgebra::Matrix(firstLayerDimension, 0);
+        layers.push_back(firstLayer);
+
+        
+        // Remaining Layers
         while(std::getline(file, line)) {
             if(line == "") {
                 LayerParameters layer;
@@ -90,10 +101,17 @@ namespace MachineLearning {
     }
 
     void writeModel(const NeuralNetwork &model, const std::string path) {
-        NetworkParameters params = model.getWeightsAndBiases();
+        NetworkParameters params = model.getParameters();
         std::ofstream outfile(path);
 
-        for(size_t l = 0; l < params.size(); ++l) {
+        std::vector<size_t> topology;
+        for(size_t i = 0; i < params.size(); ++i) {
+            topology.push_back(params[i].dimension);
+        }
+
+        outfile << utils::join<size_t>(" ", topology) << std::endl;
+
+        for(size_t l = 1; l < params.size(); ++l) {
             auto weights = params[l].weights.get2DVector();
             auto biases  = params[l].biases.get2DVector();
 

@@ -83,10 +83,11 @@ namespace MachineLearning {
             }
         }
 
-        NetworkParameters getWeightsAndBiases() const {
+        NetworkParameters getParameters() const {
             NetworkParameters ret;
             for(size_t l = 0; l < this->layers.size(); ++l) {
                 LayerParameters layer;
+                layer.dimension = this->layers[l]->dimension();
                 layer.weights = this->layers[l]->w;
                 layer.biases  = this->layers[l]->b;
 

@@ -5,11 +5,11 @@
 #include "machine-learning/neural-network.hpp"
 #include "machine-learning/read-write-data.hpp"
 
-const double alpha = 0.02;
-const double learningRate = 0.3;
+const double alpha = 0.05;
+const double learningRate = 0.45;
 const size_t epochs = 5e4;
-const size_t batchSize = 1;
-const size_t outputFrequency = 1000;
+const size_t batchSize = 20;
+const size_t outputFrequency = 10;
 
 LinearAlgebra::Matrix costPrime (const LinearAlgebra::Matrix &Expected, const LinearAlgebra::Matrix &Predicted) {
     return Predicted - Expected;
@@ -27,13 +27,16 @@ double leakyRELUPrime(const double x) {
 
 void train() {
     MachineLearning::NeuralNetwork net(
-        {2, 5, 2, 1},
+        {11, 15, 10, 5, 1},
         leakyRELU,
         leakyRELUPrime,
         costPrime
     );
 
-    auto trainingData = MachineLearning::loadTrainingData("train.txt");
+
+    std::cout << "Load Traning Data" << std::endl;
+    auto trainingData = MachineLearning::loadTrainingData("dataset/homeloan-train.txt");
+    std::cout << "Begin Training" << std::endl;
     net.train(
         trainingData,
         batchSize,
@@ -62,8 +65,8 @@ void loadFromFile() {
 }
 
 int main() {
-    //train();
-    loadFromFile();
+    train();
+    //loadFromFile();
 
     return 0;
 }

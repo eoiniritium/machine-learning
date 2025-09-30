@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 
+#include <format>
 #include <iostream>
 
 
@@ -20,7 +21,9 @@ namespace MachineLearning {
         std::string line;
 
 
+        size_t i = 1;
         while(std::getline(file, line)) {
+
             auto split = utils::split(line, ' ');
 
             auto lhs = utils::split(split[0], ',');
@@ -28,6 +31,7 @@ namespace MachineLearning {
 
             LinearAlgebra::Matrix input(lhs.size(), 1);
             LinearAlgebra::Matrix expected(rhs.size(), 1);
+
 
             for(size_t i = 0; i < lhs.size(); ++i) {
                 input.at(i, 0) = std::stod(lhs[i]);

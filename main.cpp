@@ -13,5 +13,5 @@ int main() {
         {3, 0},
     });
 
-    std::cout << 3*mtx2 << std::endl;
+    std::cout << mtx1 << std::endl;
 }

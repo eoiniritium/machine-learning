@@ -9,11 +9,13 @@
 namespace Maths {
     template<class T>
     class Matrix {
-        private:
+        protected:
         size_t rows, cols;
         std::vector<T> mtx;
 
         public:
+        Matrix() {}
+
         Matrix(size_t rows, size_t cols) {
             this->rows = rows;
             this->cols = cols;
@@ -129,6 +131,7 @@ namespace Maths {
         }
 
         std::pair<size_t, size_t> shape() const { return std::pair<size_t, size_t>(rows, cols); }
+
         friend std::ostream& operator << ( std::ostream& outs, const Matrix<T> &matrix) {
             std::string matrixString = "|";
 
@@ -143,7 +146,38 @@ namespace Maths {
             return outs << matrixString << std::to_string(matrix.mtx.back()) << " |";
         }
 
-        private:
+        Matrix transpose() {
+            auto ret = Matrix<T>(cols, rows);
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    ret[j, i] = mtx[idx(i, j)];
+                }
+            }
+
+            return ret;
+        }
+
+        Matrix repeatColumn(size_t nCols) {
+            if(cols != 1) {
+                throw std::invalid_argument("Matrix must be a column vector.");
+            }
+
+            auto columnValues = transpose().asVector()[0];
+
+            auto vectorRepeated = std::vector<std::vector<double>>(nCols);
+            for(size_t i = 0; i < nCols; ++i) {
+                vectorRepeated[i] = columnValues;
+            }
+
+            return Matrix(vectorRepeated).transpose();
+        }
+
+        std::vector<std::vector<T>> asVector() {
+            return mtx;
+        }
+
+        protected:
         size_t idx(size_t i, size_t j) const { return i*cols + j; }
     };
 }

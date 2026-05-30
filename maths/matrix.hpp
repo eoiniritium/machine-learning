@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <format>
+#include <functional>
 
 namespace Maths {
     template<class T>
@@ -132,20 +133,6 @@ namespace Maths {
 
         std::pair<size_t, size_t> shape() const { return std::pair<size_t, size_t>(rows, cols); }
 
-        friend std::ostream& operator << ( std::ostream& outs, const Matrix<T> &matrix) {
-            std::string matrixString = "|";
-
-            size_t i = 0;
-            while (i < matrix.rows * matrix.cols - 1 ) {
-                matrixString += std::to_string(matrix.mtx[i++]) + " ";
-                if(i % matrix.cols == 0) {
-                    matrixString += "|\n|";
-                }
-            }
-
-            return outs << matrixString << std::to_string(matrix.mtx.back()) << " |";
-        }
-
         Matrix transpose() {
             auto ret = Matrix<T>(cols, rows);
 
@@ -174,7 +161,41 @@ namespace Maths {
         }
 
         std::vector<std::vector<T>> asVector() {
-            return mtx;
+            auto ret = std::vector<std::vector<T>>(rows, std::vector<T>(cols));
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    ret[i][j] = mtx[idx(i, j)];
+                }
+            }
+
+            return ret;
+        }
+
+        Matrix applyElementWise(const std::function<T (T)> &fn){
+            auto ret = Matrix<T>(rows, cols);
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    ret[i, j] = fn(mtx[idx(i, j)]);
+                }
+            }
+
+            return ret;
+        }
+
+        friend std::ostream& operator << ( std::ostream& outs, const Matrix<T> &matrix) {
+            std::string matrixString = "|";
+
+            size_t i = 0;
+            while (i < matrix.rows * matrix.cols - 1 ) {
+                matrixString += std::to_string(matrix.mtx[i++]) + " ";
+                if(i % matrix.cols == 0) {
+                    matrixString += "|\n|";
+                }
+            }
+
+            return outs << matrixString << std::to_string(matrix.mtx.back()) << " |";
         }
 
         protected:

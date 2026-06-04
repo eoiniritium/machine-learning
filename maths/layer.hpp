@@ -66,5 +66,10 @@ namespace Maths::MachineLearning {
 
             return linear.applyElementWise(Dactivation)*weights;
         }
+
+        std::pair<size_t, size_t> shape() const {
+            auto ws = weights.shape();
+            return std::pair<size_t, size_t>(ws.second, ws.first);
+        }
     };
 }

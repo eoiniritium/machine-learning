@@ -11,12 +11,21 @@
 #include "layer.hpp"
 
 namespace Maths::MachineLearning {
+    typedef std::vector<std::pair<Matrix<double>, Matrix<double>>> TraningData;
+    typedef std::function<double (Matrix<double>, Matrix<double>)> LossFunction;
+
     class NeuralNetwork {
         private:
         std::unordered_map<std::string, Layer> layers;
         std::vector<std::string> layerOrder;
+        LossFunction lossFunction, DlossFunction;
 
         public:
+        NeuralNetwork(const LossFunction lossFunction, const LossFunction DlossFunction) {
+            this->lossFunction = lossFunction;
+            this->DlossFunction = DlossFunction;
+        }
+
         NeuralNetwork &addLayer(const Layer &layer, std::string name) {
             auto result = layers.insert({name, layer});
             if(!result.second) { throw std::invalid_argument("Layer names must be unique!"); }
@@ -47,6 +56,16 @@ namespace Maths::MachineLearning {
             }
 
             return carry;
+        }
+
+        // Learn
+        void learn(
+            const TraningData &traningData,
+            size_t epochs,
+            double learningRate,
+            size_t batchSize
+        ) {
+
         }
 
         Layer operator[](std::string name) const {

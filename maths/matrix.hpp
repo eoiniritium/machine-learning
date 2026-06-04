@@ -24,7 +24,7 @@ namespace Maths {
             mtx = std::vector<T>(rows * cols, 0);
         }
 
-        Matrix(std::vector<std::vector<T>> matrix) {
+        Matrix(const std::vector<std::vector<T>> &matrix) {
             rows = matrix.size();
             cols = matrix[0].size();
 
@@ -36,6 +36,13 @@ namespace Maths {
                     mtx[i++] = element;
                 }
             }
+        }
+
+        Matrix(const std::vector<T> &matrix, size_t rows, size_t cols) {
+            this->rows = rows;
+            this->cols = cols;
+
+            mtx = matrix;
         }
 
         Matrix(const Matrix &matrix) {
@@ -150,14 +157,14 @@ namespace Maths {
                 throw std::invalid_argument("Matrix must be a column vector.");
             }
 
-            auto columnValues = transpose().asVector()[0];
+            std::vector<T> repeated;
+            repeated.reserve(mtx.size() * nCols);
 
-            auto vectorRepeated = std::vector<std::vector<double>>(nCols);
             for(size_t i = 0; i < nCols; ++i) {
-                vectorRepeated[i] = columnValues;
+                repeated.insert(repeated.end(), mtx.begin(), mtx.end());
             }
 
-            return Matrix(vectorRepeated).transpose();
+            return Matrix(repeated, rows, nCols);
         }
 
         std::vector<std::vector<T>> asVector() {
@@ -171,6 +178,7 @@ namespace Maths {
 
             return ret;
         }
+
 
         Matrix applyElementWise(const std::function<T (T)> &fn){
             auto ret = Matrix<T>(rows, cols);

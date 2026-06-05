@@ -5,6 +5,7 @@
 #include <functional>
 #include <random>
 #include <tuple>
+#include <chrono>
 
 #include "matrix.hpp"
 
@@ -15,61 +16,67 @@ namespace Maths::MachineLearning {
 
     class Layer {
         private:
-        Matrix<double> weights, bias;
+        Matrix<double> w, b;
         std::default_random_engine generator;
-        activationFunction activation, Dactivation;
+        activationFunction activationFn, DactivationFn;
 
         public:
         Layer(
             const size_t inputDimension, const size_t outputDimension,
             activationFunction activation, activationFunction Dactivation
         ) {
-            weights = Matrix<double>(outputDimension, inputDimension);
-            bias = Matrix<double>(outputDimension, 1);
+            w = Matrix<double>(outputDimension, inputDimension);
+            b = Matrix<double>(outputDimension, 1);
 
-            this->activation = activation;
-            this->Dactivation = Dactivation;
+            this->activationFn = activation;
+            this->DactivationFn = Dactivation;
+
+            generator.seed(std::random_device{}() ^ static_cast<unsigned>(
+                std::chrono::high_resolution_clock::now().time_since_epoch().count()
+            ));
         }
 
         void initKaimingNormal(double gain = 2.f, bool fanIn = true) {
-            auto n = weights.shape().second;
-            if(!fanIn) { n = weights.shape().first; }
+            auto n = w.shape().second;
+            if(!fanIn) { n = w.shape().first; }
 
             std::normal_distribution<double> distribution(0.f, sqrt(gain/static_cast<double>(n)));
 
 
-            weights = weights.applyElementWise([&](double _) {
+            w = w.applyElementWise([&](double _) {
                 return distribution(generator);
             });
         }
 
-        Matrix<double> feedForward(const Matrix<double> &inputData) {
+        Matrix<double> preActivation(const Matrix<double> &inputData) {
             Matrix<double> linear;
             auto inputShapeCols = inputData.shape().second;
 
             if(inputShapeCols == 1) {
-                linear = weights*inputData + bias;
+                linear = w*inputData + b;
             } else {
-                linear = weights*inputData + bias.repeatColumn(inputShapeCols);
+                linear = w*inputData + b.repeatColumn(inputShapeCols);
             }
 
-            return linear.applyElementWise(activation);
+            return linear;
         }
-        Matrix<double> DfeedForward(const Matrix<double> &inputData) {
-            Matrix<double> linear;
-            auto inputShape = inputData.shape();
-            if(inputShape.second == 1) {
-                linear = weights*inputData + bias;
-            } else {
-                linear = weights*inputData + bias.repeatColumn(inputShape.second);
-            }
 
-            return linear.applyElementWise(Dactivation)*weights;
+        // Call after preActivation
+        Matrix<double> activation(const Matrix<double> &preActivation) const {
+            return preActivation.applyElementWise(activationFn);
         }
+
+        Matrix<double> Dactivation(const Matrix<double> &preActivation) const {
+            return preActivation.applyElementWise(DactivationFn);
+        }
+
 
         std::pair<size_t, size_t> shape() const {
-            auto ws = weights.shape();
+            auto ws = w.shape();
             return std::pair<size_t, size_t>(ws.second, ws.first);
         }
+
+        const Matrix<double> &weights() const { return w; }
+        const Matrix<double> &biases()  const { return b; }
     };
 }

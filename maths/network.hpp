@@ -18,14 +18,8 @@ namespace Maths::MachineLearning {
         private:
         std::unordered_map<std::string, Layer> layers;
         std::vector<std::string> layerOrder;
-        LossFunction lossFunction, DlossFunction;
 
         public:
-        NeuralNetwork(const LossFunction lossFunction, const LossFunction DlossFunction) {
-            this->lossFunction = lossFunction;
-            this->DlossFunction = DlossFunction;
-        }
-
         NeuralNetwork &addLayer(const Layer &layer, std::string name) {
             auto result = layers.insert({name, layer});
             if(!result.second) { throw std::invalid_argument("Layer names must be unique!"); }
@@ -52,7 +46,9 @@ namespace Maths::MachineLearning {
             auto carry = inputData;
 
             for(auto layerName: layerOrder) {
-                carry = layers.at(layerName).feedForward(carry);
+                Layer *layer = &layers.at(layerName);
+
+                carry = layer->activation(layer->preActivation(carry));
             }
 
             return carry;
@@ -65,6 +61,35 @@ namespace Maths::MachineLearning {
             double learningRate,
             size_t batchSize
         ) {
+            std::vector<Matrix<double>> z(layers.size());
+            std::vector<Matrix<double>> x(layers.size()+1);
+            std::vector<Matrix<double>> deltas(layers.size());
+
+            size_t n = traningData[0].second.shape().first; // number of rows in expected output
+            size_t L = layers.size();
+
+            for(size_t epoch = 0; epoch < epochs; ++epoch) {
+            for(size_t observation = 0; observation < traningData.size(); ++observation) {
+                x[0] = traningData[observation].first;
+
+                // Forwards Pass
+                for(size_t l = 0; l < L; ++l) {
+                    Layer *layer = &layers.at(layerOrder[l-1]);
+
+                    z[l] = layer->preActivation(x[l]);
+                    x[l+1] = layer->activation(z[l]);
+                }
+
+                // Backwards Pass
+
+                deltas[L-1] = (2/n) * (layers.at(layerOrder[L-1]).Dactivation(z[L-1]));
+                for(size_t l = 1; l < layers.size() + 1; ++l) {
+                    Layer *layer = &layers.at(layerOrder[l-1]);
+
+
+                }
+
+            }}
 
         }
 

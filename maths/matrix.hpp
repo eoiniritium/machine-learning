@@ -15,7 +15,7 @@ namespace Maths {
         std::vector<T> mtx;
 
         public:
-        Matrix() {}
+        Matrix() { rows = 0; cols = 0; }
 
         Matrix(size_t rows, size_t cols) {
             this->rows = rows;
@@ -92,6 +92,25 @@ namespace Maths {
 
             return ret;
         }
+        Matrix operator-(const Matrix &other) const {
+            if(shape() != other.shape()) {
+                throw std::invalid_argument(std::format(
+                    "Matricies must be same shape\n"
+                    "Attempting ({}x{})+({}x{})",
+                    rows, cols, other.shape().first, other.shape().second
+                ));
+            }
+
+            auto ret = Matrix<T>(rows, cols);
+
+            for(size_t i = 0; i < rows; i++) {
+                for(size_t j = 0; j < cols; ++j) {
+                    ret[i, j] = mtx[idx(i, j)] - other[i, j];
+                }
+            }
+
+            return ret;
+        }
 
         // Multiplication
         Matrix operator*(const T &scalar) const {
@@ -138,6 +157,16 @@ namespace Maths {
             return ret;
         }
 
+        Matrix hadamard(const Matrix &other) const {
+            if(shape() != other.shape()) {
+                throw std::invalid_argument(std::format(
+                    "Matricies must be same shape\n"
+                    "Attempting ({}x{})*({}x{})",
+                    rows, cols, other.shape().first, other.shape().second
+                ));
+            }
+        };
+
         std::pair<size_t, size_t> shape() const { return std::pair<size_t, size_t>(rows, cols); }
 
         Matrix transpose() {
@@ -180,7 +209,7 @@ namespace Maths {
         }
 
 
-        Matrix applyElementWise(const std::function<T (T)> &fn){
+        Matrix applyElementWise(const std::function<T (T)> &fn) const {
             auto ret = Matrix<T>(rows, cols);
 
             for(size_t i = 0; i < rows; ++i) {
@@ -193,6 +222,8 @@ namespace Maths {
         }
 
         friend std::ostream& operator << ( std::ostream& outs, const Matrix<T> &matrix) {
+            if (matrix.mtx.empty()) return outs << "| |";
+            
             std::string matrixString = "|";
 
             size_t i = 0;

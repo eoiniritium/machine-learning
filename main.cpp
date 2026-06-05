@@ -5,25 +5,13 @@
 #include "maths/layer.hpp"
 #include "maths/network.hpp"
 
-double sigmoid(const double x) { return 1.f/(1.f+exp(-x));}
-double Dsigmoid(const double x) { return sigmoid(x) * (1-sigmoid(x));}
-
-double mse(const Maths::Matrix<double> &predicted, const Maths::Matrix<double> &expected) {
-    double se = 0.f;
-
-    for(size_t i = 0; i < expected.shape().first; ++i) {
-        se += powl(expected[i, 0] - predicted[i, 0], 2);
-    }
-
-    return se/static_cast<double>(predicted.shape().first);
-}
-double Dmse(const Maths::Matrix<double> &predicted, const Maths::Matrix<double> &expected) {
-    
-}
+double sigmoid(const double x) { return 1.f/(1.f+exp(-x)); }
+double Dsigmoid(const double x) { return sigmoid(x) * (1-sigmoid(x)); }
 
 int main() {
 
-    Maths::MachineLearning::NeuralNetwork network();
+    Maths::MachineLearning::NeuralNetwork network;
+
 
     network.addLayer(Maths::MachineLearning::Layer(
         2, 5, sigmoid, Dsigmoid
@@ -32,8 +20,12 @@ int main() {
         5, 2, sigmoid, Dsigmoid
     ), "output-layer");
 
+    
+
     network["input-layer"].initKaimingNormal();
     network["output-layer"].initKaimingNormal();
+
+    
 
     network.setOrder({"input-layer", "output-layer"});
 

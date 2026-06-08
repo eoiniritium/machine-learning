@@ -96,7 +96,7 @@ namespace Maths {
             if(shape() != other.shape()) {
                 throw std::invalid_argument(std::format(
                     "Matricies must be same shape\n"
-                    "Attempting ({}x{})+({}x{})",
+                    "Attempting ({}x{})-({}x{})",
                     rows, cols, other.shape().first, other.shape().second
                 ));
             }
@@ -110,6 +110,41 @@ namespace Maths {
             }
 
             return ret;
+        }
+
+        Matrix &operator+=(const Matrix &other) {
+            if(shape() != other.shape()) {
+                throw std::invalid_argument(std::format(
+                    "Matricies must be same shape\n"
+                    "Attempting ({}x{})+({}x{})",
+                    rows, cols, other.shape().first, other.shape().second
+                ));
+            }
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    mtx[idx(i, j)] += other[i, j];
+                }
+            }
+
+            return *this;
+        }
+        Matrix &operator-=(const Matrix &other) {
+            if(shape() != other.shape()) {
+                throw std::invalid_argument(std::format(
+                    "Matricies must be same shape\n"
+                    "Attempting ({}x{})-({}x{})",
+                    rows, cols, other.shape().first, other.shape().second
+                ));
+            }
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    mtx[idx(i, j)] -= other[i, j];
+                }
+            }
+
+            return *this;
         }
 
         // Multiplication
@@ -165,11 +200,21 @@ namespace Maths {
                     rows, cols, other.shape().first, other.shape().second
                 ));
             }
+
+            Matrix ret(rows, cols);
+
+            for(size_t i = 0; i < rows; ++i) {
+                for(size_t j = 0; j < cols; ++j) {
+                    ret[i, j] = mtx[idx(i, j)] * other[i, j];
+                }
+            }
+
+            return ret;
         };
 
         std::pair<size_t, size_t> shape() const { return std::pair<size_t, size_t>(rows, cols); }
 
-        Matrix transpose() {
+        Matrix transpose() const {
             auto ret = Matrix<T>(cols, rows);
 
             for(size_t i = 0; i < rows; ++i) {

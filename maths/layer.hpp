@@ -78,5 +78,8 @@ namespace Maths::MachineLearning {
 
         const Matrix<double> &weights() const { return w; }
         const Matrix<double> &biases()  const { return b; }
+
+        void updateWeights(const Matrix<double> &delta) { w -= delta; }
+        void updateBiases (const Matrix<double> &delta) { b -= delta; }
     };
 }

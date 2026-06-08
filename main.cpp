@@ -17,7 +17,7 @@ int main() {
         2, 5, sigmoid, Dsigmoid
     ), "input-layer")
     .addLayer(Maths::MachineLearning::Layer(
-        5, 2, sigmoid, Dsigmoid
+        5, 1, sigmoid, Dsigmoid
     ), "output-layer");
 
     
@@ -29,10 +29,9 @@ int main() {
 
     network.setOrder({"input-layer", "output-layer"});
 
-    auto result = network.feedForward(Maths::Matrix<double>({
-        std::vector<double>{1, 10},
-        std::vector<double>{1, 10},
-    }));
+    auto trainingData = Maths::MachineLearning::generateXORTrainingData();
 
-    std::cout << result << std::endl;
+    network.learn(trainingData, 1e8, 0.1, 1);
+
+    return 0;
 }

@@ -14,6 +14,7 @@
 namespace Maths::MachineLearning {
     typedef std::vector<std::pair<Matrix<double>, Matrix<double>>> TrainingData;
     typedef std::function<double (Matrix<double>, Matrix<double>)> LossFunction;
+    typedef std::function<double (size_t)> LearningRateFunction;
 
     TrainingData generateXORTrainingData() {
         return {
@@ -68,7 +69,7 @@ namespace Maths::MachineLearning {
         void learn(
             const TrainingData &trainingData,
             size_t epochs,
-            double learningRate,
+            LearningRateFunction learningRateFn,
             size_t batchSize,
             size_t printEpochStep = 100
         ) {
@@ -111,8 +112,8 @@ namespace Maths::MachineLearning {
                     for(size_t l = 0; l < L; ++l) {
                         Layer *layer = &layers.at(layerOrder[l]);
 
-                        layer->updateWeights(learningRate * deltas[l] * x[l].transpose());
-                        layer->updateBiases (learningRate * deltas[l]);
+                        layer->updateWeights(learningRateFn(epoch) * deltas[l] * x[l].transpose());
+                        layer->updateBiases (learningRateFn(epoch) * deltas[l]);
                     }
 
                     // Telematics
